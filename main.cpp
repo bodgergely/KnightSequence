@@ -90,7 +90,7 @@ private:
 class KnightSequenceGenerator
 {
 public:
-	KnightSequenceGenerator(int sequenceLen, uint maxVowelCount) : _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _adjMatrix(128, make_pair('1', 'O'))
+	KnightSequenceGenerator(int sequenceLen, uint maxVowelCount) : _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _adjMatrix(127, make_pair('1', 'O'))
 	{
 		_adjMatrix.addConnection('A', 'L');
 		_adjMatrix.addConnection('A', 'H');
