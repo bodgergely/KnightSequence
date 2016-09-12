@@ -90,7 +90,7 @@ private:
 class KnightSequenceGenerator
 {
 public:
-	KnightSequenceGenerator(int sequenceLen, uint maxVowelCount) : _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _adjMatrix(sequenceLen, make_pair('1', 'O'))
+	KnightSequenceGenerator(int sequenceLen, uint maxVowelCount) : _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _adjMatrix(128, make_pair('1', 'O'))
 	{
 		_adjMatrix.addConnection('A', 'L');
 		_adjMatrix.addConnection('A', 'H');
@@ -132,6 +132,7 @@ public:
 	{
 		for(char c : _chars)
 		{
+			cout << "Starting from char: " << c << endl;
 			assert(_seq.size()==0);
 			_generate(c, 0);
 		}
