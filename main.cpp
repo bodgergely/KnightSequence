@@ -8,6 +8,7 @@
 #include <utility>
 #include <cassert>
 #include <chrono>
+#include <thread>
 
 using namespace std;
 
@@ -88,18 +89,20 @@ private:
 
 
 
+
 class KnightSequenceGenerator
 {
 public:
-	KnightSequenceGenerator(int sequenceLen, uint maxVowelCount) : _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _adjMatrix(127, make_pair('1', 'O')), _count(0)
+	KnightSequenceGenerator(char start, int sequenceLen, uint maxVowelCount) : _startChar(start), _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _count(0)
 	{
+		/*
 		_adjMatrix.addConnection('A', 'L');
 		_adjMatrix.addConnection('A', 'H');
 		_adjMatrix.addConnection('B', 'K');
 		_adjMatrix.addConnection('B', 'M');
 		_adjMatrix.addConnection('B', 'I');
 		_adjMatrix.addConnection('C', 'F');
-		_adjMatrix.addConnection('C', 'L');
+		_adjMatrix.addConnection('C', 'L');enerate();
 		_adjMatrix.addConnection('C', 'J');
 		_adjMatrix.addConnection('D', 'M');
 		_adjMatrix.addConnection('D', 'O');
@@ -124,19 +127,50 @@ public:
 		_adjMatrix.addConnection('L', '3');
 		_adjMatrix.addConnection('N', '1');
 		_adjMatrix.addConnection('O', '2');
+		*/
+
+		_neighborMap['A'] = {'L', 'H'};
+		_neighborMap['B'] = {'K', 'M', 'I'};
+		_neighborMap['C'] = {'F', 'L', 'J', 'N'};
+		_neighborMap['D'] = {'M', 'O', 'G'};
+		_neighborMap['E'] = {'H', 'N'};
+		_neighborMap['F'] = {'1', 'M', 'C'};
+		_neighborMap['G'] = {'2', 'N', 'D'};
+		_neighborMap['H'] = {'A','E','K', '1', '3', 'O'};
+		_neighborMap['I'] = {'L', '2', 'B'};
+		_neighborMap['J'] = {'M', '3', 'C'};
+		_neighborMap['K'] = {'2', 'B', 'H'};
+		_neighborMap['L'] = {'A','C', 'I', '3'};
+		_neighborMap['M'] = {'F','B', 'D', 'J'};
+		_neighborMap['N'] = {'1', 'G', 'C', 'E'};
+		_neighborMap['O'] = {'2', 'H', 'D'};
+		_neighborMap['1'] = {'F', 'H', 'N'};
+		_neighborMap['2'] = {'K', 'O', 'G', 'I'};
+		_neighborMap['3'] = {'L', 'H', 'J'};
+
 
 
 	}
-	~KnightSequenceGenerator() {}
+	~KnightSequenceGenerator()
+	{
+
+	}
 
 	unsigned long long generate()
 	{
-		for(char c : _chars)
-		{
-			//cout << "Starting from char: " << c << "\n";
-			//assert(_seq.size()==0);
-			_generate(c, 0);
-		}
+		_generate(_startChar, 0);
+		return _count;
+	}
+
+
+	void generateThreaded()
+	{
+		_thread = thread(&KnightSequenceGenerator::_generate, this, _startChar, 0);
+	}
+	unsigned long long count()
+	{
+		if(_thread.joinable())
+			_thread.join();
 
 		return _count;
 	}
@@ -148,21 +182,22 @@ private:
 
 		if(is_vowel(currChar))
 			++_vowelCnt;
-		_seq.push_back(currChar);
-		if(_seq.size() == _seqLen)
+		//_seq.push_back(currChar);
+		if(depth+1 == _seqLen)
 		{
 			//assert(_seq.size() == depth+1);
 			++_count;
-			popBack();
+			popBack(currChar);
 			return;
 		}
 
-		vector<char> nbs = _adjMatrix.neighbors(currChar);
+		const vector<char>& nbs = _neighborMap[currChar];
+		//vector<char> nbs = _adjMatrix.neighbors(currChar);
 		//cout << _seq << " Will try: ";
 		//for(char c : nbs)
 		//	cout << c << " ";
 		//cout << endl;
-		for(char c : nbs)
+		for(const char& c : nbs)
 		{
 			if(is_vowel(c) && _vowelCnt==_maxVowelCount)
 				; // noop
@@ -172,19 +207,19 @@ private:
 			}
 
 		}
-		popBack();
+		popBack(currChar);
 
 	}
 
 
-	void popBack()
+	void popBack(char ch)
 	{
-		if(is_vowel(_seq.back()))
+		if(is_vowel(ch))
 			--_vowelCnt;
-		_seq.pop_back();
+		//_seq.pop_back();
 	}
 
-	bool is_vowel(char c)
+	inline bool is_vowel(char c) const
 	{
 		if(c == 'A' || c == 'E' || c == 'I' || c == 'O')
 			return true;
@@ -192,23 +227,57 @@ private:
 			return false;
 	}
 
-private:
-	const vector<char> _chars{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', '1', '2', '3'};
-	string _seq;
+protected:
+
+	char _startChar;
+	unordered_map<char, vector<char> > _neighborMap;
+	//string _seq;
 	uint   _vowelCnt{0};
 	const uint   _maxVowelCount;
 	int _seqLen;
-	AdjancencyMatrix<char> _adjMatrix;
+	//AdjancencyMatrix<char> _adjMatrix;
 	unsigned long long	   _count;
+	thread _thread;
 	//unordered_set<string> _sequenceSet;
+};
+
+using KnightSequenceGeneratorPtr = std::unique_ptr<KnightSequenceGenerator>;
+
+class CompositeGenerator
+{
+public:
+	CompositeGenerator(int sequenceLen, uint maxVowelCount)
+	{
+		for(char c : _chars)
+		{
+			_generators.push_back(KnightSequenceGeneratorPtr(new KnightSequenceGenerator(c, sequenceLen, maxVowelCount)));
+		}
+	}
+
+	unsigned long long count()
+	{
+		for(auto& g : _generators)
+			g->generateThreaded();
+
+		unsigned long long totalCount = 0;
+		for(auto& g : _generators)
+			totalCount += g->count();
+
+		return totalCount;
+	}
+
+private:
+	const vector<char> _chars{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', '1', '2', '3'};
+	vector<KnightSequenceGeneratorPtr> _generators;
+
 };
 
 
 int main(int argc, char** argv)
 {
-	KnightSequenceGenerator knight(17, 2);
+	CompositeGenerator knight(17, 2);
 	auto start = chrono::system_clock::now();
-	unsigned long long count = knight.generate();
+	unsigned long long count = knight.count();
 	auto end = chrono::system_clock::now();
 	cout << "Count: " << count << endl;
 	cout << "Took (secs): " << chrono::duration_cast<chrono::seconds>(end-start).count() << endl;
