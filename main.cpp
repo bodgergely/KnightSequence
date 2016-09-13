@@ -134,6 +134,7 @@ public:
 		{
 			cout << "Starting from char: " << c << endl;
 			assert(_seq.size()==0);
+
 			_generate(c, 0);
 		}
 
@@ -141,18 +142,20 @@ public:
 	}
 
 private:
-	void _generate(char start, int depth)
+	void _generate(char currChar, int depth)
 	{
+		cout << depth << endl;
 		if(depth==_seqLen)
 		{
 			assert(_seq.size() == depth);
 			if(_sequenceSet.find(_seq) == _sequenceSet.end())
 				_sequenceSet.insert(_seq);
-			popBack();
 			return;
 		}
 
-		char currChar = start;
+		if(is_vowel(currChar))
+			++_vowelCnt;
+		_seq.push_back(currChar);
 
 		vector<char> nbs = _adjMatrix.neighbors(currChar);
 		for(char c : nbs)
@@ -161,10 +164,9 @@ private:
 				; // noop
 			else
 				_generate(c, depth+1);
-		}
 
+		}
 		popBack();
-		return;
 
 	}
 
@@ -197,7 +199,7 @@ private:
 
 int main(int argc, char** argv)
 {
-	KnightSequenceGenerator knight(17, 2);
+	KnightSequenceGenerator knight(8, 2);
 	unordered_set<string> result = knight.generate();
 	for(const string& s : result)
 	{
