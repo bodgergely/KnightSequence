@@ -151,7 +151,7 @@ public:
 
 
 	}
-	~KnightSequenceGenerator()
+	virtual ~KnightSequenceGenerator()
 	{
 
 	}
@@ -167,16 +167,19 @@ public:
 	{
 		_thread = thread(&KnightSequenceGenerator::_generate, this, _startChar, 0);
 	}
-	unsigned long long count()
+	virtual unsigned long long count()
 	{
 		if(_thread.joinable())
 			_thread.join();
 
-		return _count;
+		return _countpriv();
 	}
 
-private:
-	void _generate(char currChar, int depth)
+protected:
+
+	virtual unsigned long long _countpriv() {return _count;}
+
+	virtual void _generate(char currChar, int depth)
 	{
 		//cout << depth << endl;
 
@@ -241,16 +244,79 @@ protected:
 	//unordered_set<string> _sequenceSet;
 };
 
+
+class KnightSequenceGeneratorTester : public KnightSequenceGenerator
+{
+public:
+	KnightSequenceGeneratorTester(char start, int sequenceLen, uint maxVowelCount) : KnightSequenceGenerator(start, sequenceLen, maxVowelCount) {}
+	virtual ~KnightSequenceGeneratorTester() {}
+
+	unordered_set<string> getSequences() {return _sequenceSet;}
+
+protected:
+	virtual unsigned long long _countpriv() {return _sequenceSet.size();}
+	virtual void _generate(char currChar, int depth)
+	{
+		//cout << depth << endl;
+		if(depth==_seqLen)
+		{
+			assert(_seq.size() == depth);
+			if(_sequenceSet.find(_seq) == _sequenceSet.end())
+				_sequenceSet.insert(_seq);
+			return;
+		}
+
+		if(is_vowel(currChar))
+			++_vowelCnt;
+		_seq.push_back(currChar);
+
+		const vector<char>& nbs = _neighborMap[currChar];
+		for(char c : nbs)
+		{
+			if(is_vowel(c) && _vowelCnt==_maxVowelCount)
+				; // noop
+			else
+				_generate(c, depth+1);
+
+		}
+		popBack();
+
+	}
+
+
+	void popBack()
+	{
+		if(is_vowel(_seq.back()))
+			--_vowelCnt;
+		_seq.pop_back();
+	}
+
+	bool is_vowel(char c)
+	{
+		if(c == 'A' || c == 'E' || c == 'I' || c == 'O')
+			return true;
+		else
+			return false;
+	}
+
+private:
+	string _seq;
+	unordered_set<string> _sequenceSet;
+};
+
 using KnightSequenceGeneratorPtr = std::unique_ptr<KnightSequenceGenerator>;
 
 class CompositeGenerator
 {
 public:
-	CompositeGenerator(int sequenceLen, uint maxVowelCount)
+	CompositeGenerator(int sequenceLen, uint maxVowelCount, bool tester = false)
 	{
 		for(char c : _chars)
 		{
-			_generators.push_back(KnightSequenceGeneratorPtr(new KnightSequenceGenerator(c, sequenceLen, maxVowelCount)));
+			if(!tester)
+				_generators.push_back(KnightSequenceGeneratorPtr(new KnightSequenceGenerator(c, sequenceLen, maxVowelCount)));
+			else
+				_generators.push_back(KnightSequenceGeneratorPtr(new KnightSequenceGeneratorTester(c, sequenceLen, maxVowelCount)));
 		}
 	}
 
@@ -275,12 +341,17 @@ private:
 
 int main(int argc, char** argv)
 {
-	CompositeGenerator knight(17, 2);
+	int steps = 17;
+	CompositeGenerator knightPerf(steps, 2);
+	CompositeGenerator knightTest(steps, 2, true);
 	auto start = chrono::system_clock::now();
-	unsigned long long count = knight.count();
-	auto end = chrono::system_clock::now();
-	cout << "Count: " << count << endl;
-	cout << "Took (secs): " << chrono::duration_cast<chrono::seconds>(end-start).count() << endl;
+	unsigned long long countPerf = knightPerf.count();
+	cout << "Count Perf: " << countPerf << endl;
+	cout << "Took Perf (secs): " << chrono::duration_cast<chrono::seconds>(chrono::system_clock::now()-start).count() << endl;
+	start = chrono::system_clock::now();
+	unsigned long long countTest = knightTest.count();
+	cout << "Count Test: " << countPerf << endl;
+	cout << "Took Test (secs): " << chrono::duration_cast<chrono::seconds>(chrono::system_clock::now()-start).count() << endl;
 	//for(const string& s : result)
 	//{
 	//	cout << s << "\n";
