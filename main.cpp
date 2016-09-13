@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <utility>
 #include <cassert>
+#include <chrono>
 
 using namespace std;
 
@@ -90,7 +91,7 @@ private:
 class KnightSequenceGenerator
 {
 public:
-	KnightSequenceGenerator(int sequenceLen, uint maxVowelCount) : _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _adjMatrix(127, make_pair('1', 'O'))
+	KnightSequenceGenerator(int sequenceLen, uint maxVowelCount) : _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _adjMatrix(127, make_pair('1', 'O')), _count(0)
 	{
 		_adjMatrix.addConnection('A', 'L');
 		_adjMatrix.addConnection('A', 'H');
@@ -128,42 +129,47 @@ public:
 	}
 	~KnightSequenceGenerator() {}
 
-	unordered_set<string> generate()
+	unsigned long long generate()
 	{
 		for(char c : _chars)
 		{
-			cout << "Starting from char: " << c << endl;
-			assert(_seq.size()==0);
-
+			//cout << "Starting from char: " << c << "\n";
+			//assert(_seq.size()==0);
 			_generate(c, 0);
 		}
 
-		return _sequenceSet;
+		return _count;
 	}
 
 private:
 	void _generate(char currChar, int depth)
 	{
-		cout << depth << endl;
-		if(depth==_seqLen)
-		{
-			assert(_seq.size() == depth);
-			if(_sequenceSet.find(_seq) == _sequenceSet.end())
-				_sequenceSet.insert(_seq);
-			return;
-		}
+		//cout << depth << endl;
 
 		if(is_vowel(currChar))
 			++_vowelCnt;
 		_seq.push_back(currChar);
+		if(_seq.size() == _seqLen)
+		{
+			//assert(_seq.size() == depth+1);
+			++_count;
+			popBack();
+			return;
+		}
 
 		vector<char> nbs = _adjMatrix.neighbors(currChar);
+		//cout << _seq << " Will try: ";
+		//for(char c : nbs)
+		//	cout << c << " ";
+		//cout << endl;
 		for(char c : nbs)
 		{
 			if(is_vowel(c) && _vowelCnt==_maxVowelCount)
 				; // noop
 			else
+			{
 				_generate(c, depth+1);
+			}
 
 		}
 		popBack();
@@ -193,18 +199,23 @@ private:
 	const uint   _maxVowelCount;
 	int _seqLen;
 	AdjancencyMatrix<char> _adjMatrix;
-	unordered_set<string> _sequenceSet;
+	unsigned long long	   _count;
+	//unordered_set<string> _sequenceSet;
 };
 
 
 int main(int argc, char** argv)
 {
-	KnightSequenceGenerator knight(8, 2);
-	unordered_set<string> result = knight.generate();
-	for(const string& s : result)
-	{
-		cout << s << "\n";
-	}
+	KnightSequenceGenerator knight(17, 2);
+	auto start = chrono::system_clock::now();
+	unsigned long long count = knight.generate();
+	auto end = chrono::system_clock::now();
+	cout << "Count: " << count << endl;
+	cout << "Took (secs): " << chrono::duration_cast<chrono::seconds>(end-start).count() << endl;
+	//for(const string& s : result)
+	//{
+	//	cout << s << "\n";
+	//}
 }
 
 

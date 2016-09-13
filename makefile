@@ -12,6 +12,7 @@ LIBS=-lm
 
 cout: main.cpp
 	g++ $(CFLAGS_DEBUG) -o ../bin/knight-g main.cpp
+	g++ $(CFLAGS) -o ../bin/knight main.cpp
 
 .PHONY: clean
 
