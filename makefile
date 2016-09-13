@@ -12,7 +12,10 @@ LIBS=-lm
 
 cout: main.cpp
 	g++ $(CFLAGS_DEBUG) -o ../bin/knight-g main.cpp
+	g++ $(CFLAGS_DEBUG) -o ../bin/knight-test-g test.cpp -lpthread -lgtest -lgtest_main
 	g++ $(CFLAGS) -o ../bin/knight main.cpp
+	g++ $(CFLAGS) -o ../bin/knight-test test.cpp -lpthread -lgtest -lgtest_main
+	
 
 .PHONY: clean
 
