@@ -15,7 +15,9 @@
 class KnightSequenceGenerator
 {
 public:
-	KnightSequenceGenerator(char start, int sequenceLen, uint maxVowelCount) : _startChar(start), _maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _count(0)
+	KnightSequenceGenerator(char start, int sequenceLen, uint maxVowelCount) : _startChar(start),
+							_neighborMap(128),_vowelCountMap(128),
+							_maxVowelCount(maxVowelCount), _seqLen(sequenceLen), _count(0)
 	{
 		_neighborMap['A'] = {'L', 'H'};
 		_neighborMap['B'] = {'K', 'M', 'I'};
@@ -35,6 +37,27 @@ public:
 		_neighborMap['1'] = {'F', 'H', 'N'};
 		_neighborMap['2'] = {'K', 'O', 'G', 'I'};
 		_neighborMap['3'] = {'L', 'H', 'J'};
+
+
+		_vowelCountMap['A'] = 0;
+		_vowelCountMap['B'] = 1;
+		_vowelCountMap['C'] = 0;
+		_vowelCountMap['D'] = 1;
+		_vowelCountMap['E'] = 0;
+		_vowelCountMap['F'] = 0;
+		_vowelCountMap['G'] = 0;
+		_vowelCountMap['H'] = 3;
+		_vowelCountMap['I'] = 0;
+		_vowelCountMap['J'] = 0;
+		_vowelCountMap['K'] = 0;
+		_vowelCountMap['L'] = 2;
+		_vowelCountMap['M'] = 0;
+		_vowelCountMap['N'] = 1;
+		_vowelCountMap['O'] = 0;
+		_vowelCountMap['1'] = 0;
+		_vowelCountMap['2'] = 2;
+		_vowelCountMap['3'] = 0;
+
 	}
 	virtual ~KnightSequenceGenerator()
 	{
@@ -69,14 +92,18 @@ protected:
 		if(is_vowel(currChar))
 			++_vowelCnt;
 
-		if(depth+1 == _seqLen)
+		const std::vector<char>& nbs = _neighborMap[currChar];
+
+		if(depth+2 == _seqLen)
 		{
-			++_count;
+			uint vowCnt = _vowelCountMap[currChar];
+			uint slots = _maxVowelCount-_vowelCnt;
+			uint l = slots == 0 ? (nbs.size() - vowCnt) : nbs.size();
+			_count+=l;
 			popBack(currChar);
 			return;
 		}
 
-		const std::vector<char>& nbs = _neighborMap[currChar];
 
 		for(const char& c : nbs)
 		{
@@ -109,7 +136,8 @@ protected:
 protected:
 
 	char _startChar;
-	std::unordered_map<char, std::vector<char> > _neighborMap;
+	std::vector<std::vector<char> > _neighborMap;
+	std::vector<uint> _vowelCountMap;
 	uint   _vowelCnt{0};
 	const uint   _maxVowelCount;
 	int _seqLen;

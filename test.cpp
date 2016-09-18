@@ -7,7 +7,7 @@ using namespace std;
 TEST(KnightSequenceCount, TestervsNonTester)
 {
 	// up to 12 steps as above that the the tester class struggles
-	for(int steps=1;steps<12;steps++)
+	for(int steps=2;steps<12;steps++)
 	{
 		CompositeGenerator k1(steps, 2);
 		CompositeGenerator k2(steps, 2, true);
